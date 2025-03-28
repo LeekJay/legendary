@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "exe_url": "https://web-production-5cd6.up.railway.app/release/Legendary_1.0.0.exe",
+  "version": "1.0.1",
+  "exe_url": "https://web-production-5cd6.up.railway.app/release/Legendary_1.0.1.exe",
   "script_urls": {
     "Legendary.py": "https://web-production-5cd6.up.railway.app/src/client/Legendary.py",
     "auto_game.py": "https://web-production-5cd6.up.railway.app/src/client/auto_game.py",
