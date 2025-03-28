@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: windows-latest # 需要Windows环境构建exe
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +41,10 @@ jobs:
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          update: true
           tag_name: ${{ github.ref }}
           name: Release ${{ github.ref_name }}
           body: |
