@@ -46,9 +46,9 @@ jobs:
         with:
           update: true
           tag_name: ${{ github.ref }}
-          name: Release ${{ github.ref_name }}
+          name: ${{ steps.version.outputs.version }}
           body: |
-            Release ${{ github.ref_name }}
+            Legendary ${{ steps.version.outputs.version }}
 
             ### Changes
             - Auto-generated release
