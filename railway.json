@@ -1,0 +1,17 @@
+{
+  "build": {
+    "builder": "nixpacks",
+    "config": {
+      "nixpacks": {
+        "provider": "python",
+        "pythonVersion": "3.10"
+      }
+    }
+  },
+  "deploy": {
+    "startCommand": "gunicorn wsgi:app --bind=0.0.0.0:${PORT}",
+    "restartPolicy": {
+      "type": "always"
+    }
+  }
+}
