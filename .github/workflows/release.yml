@@ -31,6 +31,8 @@ jobs:
           echo "VERSION=$version" >> $env:GITHUB_ENV
 
       - name: Build application
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
           python build.py
 
