@@ -30,9 +30,6 @@ jobs:
           echo "version=$version" >> $env:GITHUB_OUTPUT
           echo "VERSION=$version" >> $env:GITHUB_ENV
 
-      - name: Verify build directory exists
-        run: mkdir -p release
-
       - name: Build application
         run: |
           python build.py

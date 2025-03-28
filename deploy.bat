@@ -3,12 +3,12 @@ cd /d %~dp0
 
 :: 執行構建腳本
 echo 🔨 正在構建專案...
-@REM call build.bat
-@REM if errorlevel 1 (
-@REM     echo ❌ 構建失敗
-@REM     pause
-@REM     exit /b 1
-@REM )
+call build.bat
+if errorlevel 1 (
+    echo ❌ 構建失敗
+    pause
+    exit /b 1
+)
 
 :: 獲取當前時間作為提交信息的一部分
 for /f "tokens=2 delims==" %%a in ('type .env ^| findstr "VERSION="') do set VERSION=%%a
