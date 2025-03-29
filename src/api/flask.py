@@ -1,3 +1,4 @@
+from math import e
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import firebase_admin
@@ -17,15 +18,16 @@ CORS(app)  # 啟用跨域
 # ✅ 從 .env 讀取維護模式設定
 MAINTENANCE_MODE = os.getenv("MAINTENANCE_MODE", "False").lower() == "true"
 # 🔐 🔐 從 .env 獲取 API 密鑰
-API_SECRET = os.getenv("API_SECRET")
+API_SECRET = os.environ.get("API_SECRET") or os.getenv("API_SECRET")
 
 if not API_SECRET:
     raise ValueError("❌ 未設置 API_SECRET 環境變量")
 
+
 @app.before_request
 def check_auth():
     # ✅ 放行不需要授權的路徑
-    allowed_prefixes = ["/assets", "/maintenance"]
+    allowed_prefixes = ["/release", "/maintenance"]
     if any(request.path.startswith(p) for p in allowed_prefixes):
         return  # 放行這些路徑，不檢查 token
 
@@ -35,17 +37,63 @@ def check_auth():
 
 
 def try_parse_firebase_key():
-    key_path = os.getenv("FIREBASE_KEY_JSON_PATH")
-    if not key_path or not os.path.exists(key_path):
-        raise ValueError(
-            "❌ Firebase 密鑰文件不存在，請檢查 FIREBASE_KEY_JSON_PATH 環境變量"
-        )
+    key_content = os.getenv("FIREBASE_KEY_JSON")
+    if not key_content:
+        raise ValueError("❌ 未設置 FIREBASE_KEY_JSON 環境變量")
 
-    try:
-        with open(key_path, "r") as f:
-            return json.load(f)
-    except Exception as e:
-        raise ValueError(f"❌ 無法讀取 Firebase 密鑰文件：{str(e)}")
+    key_data = None
+
+    # 先嘗試作為文件路徑處理
+    if os.path.exists(key_content):
+        if not key_content.lower().endswith(".json"):
+            raise ValueError(f"密钥文件 {key_content} 不是 JSON 文件")
+
+        if not os.access(key_content, os.R_OK):
+            raise ValueError(
+                f"❌ 無權限讀取 Firebase 密鑰文件: {key_content}\n請檢查文件權限設置"
+            )
+        try:
+            with open(key_content, "r", encoding="utf-8") as f:
+                key_data = json.load(f)
+        except json.JSONDecodeError:
+            raise ValueError(f"無效的 JSON 格式: {key_content}")
+        except Exception as file_err:
+            raise ValueError(
+                f"❌ 無法讀取 Firebase 密鑰文件: {key_content}\n"
+                f"原因: {str(file_err)}\n"
+                f"請檢查文件格式或權限設置"
+            ) from None
+
+    # 如果不是文件路徑問題，嘗試作為base64處理
+    if key_data is None:
+        try:
+            import base64
+
+            # 使用标准方法验证 base64 格式
+            try:
+                decoded_bytes = base64.b64decode(key_content, validate=True)
+                encoded = base64.b64encode(decoded_bytes).decode("utf-8")
+                if encoded.replace("=", "") != key_content.replace("=", ""):
+                    raise ValueError("無效的 base64 格式: 編碼前後不一致")
+            except ValueError as e:
+                raise ValueError(f"無效的 base64 格式: {str(e)}")
+
+            decoded = base64.b64decode(key_content).decode("utf-8")
+            key_data = json.loads(decoded)
+        except json.JSONDecodeError:
+            raise ValueError("base64 內容不是有效的 JSON 格式")
+        except Exception as base64_err:
+            raise ValueError(
+                f"❌ 無法解析 Firebase 密鑰:\n"
+                f"2. 作為 base64 內容失敗: {str(key_content)}\n"
+                f"原因: {str(base64_err)}\n"
+                f"請檢查環境變量值是有效文件路徑還是 base64 編碼的 JSON 內容"
+            ) from None
+
+    if key_data is None:
+        raise ValueError("❌ 無法獲取有效的 Firebase 密鑰數據")
+
+    return key_data
 
 
 key_dict = try_parse_firebase_key()
@@ -55,20 +103,23 @@ FIREBASE_URL = os.getenv("FIREBASE_URL")
 if not FIREBASE_URL:
     raise ValueError("❌ 未設置 FIREBASE_URL 環境變量")
 
-firebase_admin.initialize_app(
-    cred, {"databaseURL": FIREBASE_URL}
-)
+firebase_admin.initialize_app(cred, {"databaseURL": FIREBASE_URL})
 print("✅ Firebase 初始化成功")
+
+
+@app.route("/release/<path:filename>")
+def serve_release(filename):
+    return send_from_directory("../../release", filename)
 
 
 @app.route("/assets/<path:filename>")
 def serve_assets(filename):
-    return send_from_directory("assets", filename)
+    return send_from_directory("../assets/imgs", filename)
 
 
-@app.route("/scripts/<path:filename>")
-def serve_scripts(filename):
-    return send_from_directory("scripts", filename)
+@app.route("/client/<path:filename>")
+def serve_client(filename):
+    return send_from_directory("../client", filename)
 
 
 @app.route("/serials/cleanup", methods=["POST"])
@@ -252,8 +303,10 @@ def register():
 
         # 帳號驗證
         if not (4 <= len(username) <= 20):
-            return jsonify({"success": False, "reason": "帳號長度必須在4-20個字符之間"}), 400
-            
+            return jsonify(
+                {"success": False, "reason": "帳號長度必須在4-20個字符之間"}
+            ), 400
+
         if not username.isalnum():
             return jsonify({"success": False, "reason": "帳號只能包含字母和數字"}), 400
 
@@ -363,7 +416,7 @@ def cleanup_old_serials():
 
 @app.route("/version.json")
 def serve_version_info():
-    return send_from_directory(".", "version.json")
+    return send_from_directory("../../", "version.json")
 
 
 if __name__ == "__main__":

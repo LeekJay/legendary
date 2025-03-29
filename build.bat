@@ -20,7 +20,7 @@ if %errorlevel% neq 0 (
 
 :: 檢查必要的依賴是否已安裝
 echo 📦 檢查依賴...
-pip install -r requirements.txt
+pip install -r requirements.txt >nul 2>nul
 if %errorlevel% neq 0 (
     echo ❌ 安裝依賴失敗
     exit /b 1
@@ -28,7 +28,7 @@ if %errorlevel% neq 0 (
 
 :: 執行構建腳本
 echo 🚀 開始構建...
-python build.py
+python build.py >nul 2>nul
 
 if errorlevel 1 (
     echo ❌ 構建失敗

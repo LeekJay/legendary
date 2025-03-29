@@ -1,9 +1,46 @@
+import argparse
 from ttkbootstrap import Window
 import tkinter as tk
 from tkinter import messagebox
 from ttkbootstrap import Label, Entry, Button
+import time
+import os
+import sys
 
 from update_manager import check_for_update
+
+
+def delete_old_version(old_exe_path):
+    """安全删除旧版本"""
+    try:
+        if not old_exe_path:
+            return
+            
+        # 确保路径存在且是文件
+        if not os.path.isfile(old_exe_path):
+            return
+            
+        # 确保不是当前运行的文件
+        if os.path.abspath(old_exe_path) == os.path.abspath(sys.argv[0]):
+            return
+            
+        # 等待1秒确保新版本完全启动
+        time.sleep(1)
+        
+        # 尝试删除
+        os.remove(old_exe_path)
+        print(f"✅ 已删除旧版本: {old_exe_path}")
+    except Exception as e:
+        print(f"⚠️ 删除旧版本失败: {e}")
+
+
+# 解析命令行参数
+parser = argparse.ArgumentParser()
+parser.add_argument('--delete-old', help='要删除的旧版本路径')
+args = parser.parse_args()
+
+if args.delete_old:
+    delete_old_version(args.delete_old)
 
 
 from PIL import Image, ImageTk, ImageSequence
@@ -22,13 +59,26 @@ check_for_update()
 sys.path.insert(0, os.path.dirname(__file__))  # 確保當前目錄優先
 
 
-def load_image_from_url(url):
+def load_image_from_url(url, max_retries=3):
     import requests
     from io import BytesIO
     from PIL import Image
+    import time
 
-    response = requests.get(url)
-    return Image.open(BytesIO(response.content))
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+
+            content_type = response.headers.get("Content-Type", "")
+            if not content_type.startswith("image/"):
+                raise ValueError(f"Invalid content type: {content_type}")
+
+            return Image.open(BytesIO(response.content))
+        except Exception:
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(1)
 
 
 class PlaceholderMaskedEntry(tk.Entry):
