@@ -1,54 +1,18 @@
-import argparse
 from ttkbootstrap import Window
 import tkinter as tk
 from tkinter import messagebox
 from ttkbootstrap import Label, Entry, Button
-import time
+
 import os
 import sys
 
 from update_manager import check_for_update
 
 
-def delete_old_version(old_exe_path):
-    """安全删除旧版本"""
-    try:
-        if not old_exe_path:
-            return
-            
-        # 确保路径存在且是文件
-        if not os.path.isfile(old_exe_path):
-            return
-            
-        # 确保不是当前运行的文件
-        if os.path.abspath(old_exe_path) == os.path.abspath(sys.argv[0]):
-            return
-            
-        # 等待1秒确保新版本完全启动
-        time.sleep(1)
-        
-        # 尝试删除
-        os.remove(old_exe_path)
-        print(f"✅ 已删除旧版本: {old_exe_path}")
-    except Exception as e:
-        print(f"⚠️ 删除旧版本失败: {e}")
-
-
-# 解析命令行参数
-parser = argparse.ArgumentParser()
-parser.add_argument('--delete-old', help='要删除的旧版本路径')
-args = parser.parse_args()
-
-if args.delete_old:
-    delete_old_version(args.delete_old)
-
-
 from PIL import Image, ImageTk, ImageSequence
 from auto_game import AutoClickerApp  # 非管理員會開啟這個
 from admin_panel import AdminPanel
 import requests  # ✅
-import sys
-import os
 
 import hashlib
 import platform
